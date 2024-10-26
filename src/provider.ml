@@ -9,13 +9,14 @@ let () =
 ;;
 
 let raise_s msg sexp = raise (E (Sexp.List [ Atom msg; sexp ]))
-let phys_same t1 t2 = phys_equal (Obj.repr t1) (Obj.repr t2)
 
 module Trait = struct
-  type ('t, 'module_type, 'tag) t = ('t, 'module_type, 'tag) Trait0.t = ..
+  type ('t, 'module_type, 'tag) t = ('t, 'module_type, 'tag) Trait0.t
 
-  let extension_constructor =
-    (Obj.Extension_constructor.of_val : _ t -> Obj.Extension_constructor.t)
+  let create = Trait0.create
+
+  let extension_constructor (type a b c) ((module M) : (a, b, c) t) =
+    Obj.Extension_constructor.of_val M.T
   ;;
 
   module Info = struct
@@ -46,7 +47,18 @@ module Trait = struct
 
   let uid (t : _ t) = Obj.Extension_constructor.id (extension_constructor t)
   let compare_by_uid id1 id2 = Uid.compare (uid id1) (uid id2)
-  let same (id1 : _ t) (id2 : _ t) = phys_same id1 id2
+
+  let same
+    (type t1 t2 m1 m2 tag1 tag2)
+    ((module M1) : (t1, m1, tag1) t)
+    ((module M2) : (t2, m2, tag2) t)
+    : (t1 * m1 * tag1, t2 * m2 * tag2) Type.eq option
+    =
+    match M1.T with
+    | M2.T -> Some Type.Equal
+    | _ -> None
+  ;;
+
   let implement = Binding0.implement
 end
 
@@ -133,7 +145,9 @@ module Handler = struct
       match Trait.compare_by_uid elt trait |> Ordering.of_int with
       | Equal ->
         if update_cache then t.(0) <- binding;
-        if_found (Obj.magic implementation)
+        (match Trait.same elt trait with
+         | Some Equal -> if_found implementation
+         | None -> invalid_arg "Provider.lookup: collision between extension constructors")
       | Less ->
         binary_search t ~trait ~update_cache ~if_not_found ~if_found ~from:(mid + 1) ~to_
       | Greater ->
@@ -154,9 +168,9 @@ module Handler = struct
     then if_not_found ~trait_info:(Trait.info trait)
     else (
       let (Binding.T { trait = cached_id; implementation }) = t.(0) in
-      if Trait.same trait cached_id
-      then if_found (Obj.magic implementation)
-      else
+      match Trait.same trait cached_id with
+      | Some Equal -> if_found implementation
+      | None ->
         binary_search
           t
           ~trait

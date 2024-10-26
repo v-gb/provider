@@ -28,7 +28,9 @@ module Trait : sig
 
       ['module_type] is expected to be a module type (Eio supports single
       functions but this is discouraged through the use of this library). *)
-  type ('t, 'module_type, 'tag) t = ('t, 'module_type, 'tag) Trait0.t = ..
+  type ('t, 'module_type, 'tag) t = ('t, 'module_type, 'tag) Trait0.t
+
+  val create : unit -> ('t, 'module_type, 'tag) t
 
   (** {1 Dump & debug} *)
 
@@ -78,7 +80,10 @@ module Trait : sig
       only for the lifetime of the running program. *)
   val uid : _ t -> Uid.t
 
-  val same : _ t -> _ t -> bool
+  val same
+    :  ('t1, 'm1, 'tag1) t
+    -> ('t2, 'm2, 'tag2) t
+    -> ('t1 * 'm1 * 'tag1, 't2 * 'm2 * 'tag2) Type.eq option
 
   (** [implement trait ~impl:(module Impl)] says to implement [trait] with
       [Impl]. The module [Impl] provided must have the right module type as
