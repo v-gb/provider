@@ -78,6 +78,11 @@ module Trait : sig
       only for the lifetime of the running program. *)
   val uid : _ t -> Uid.t
 
+  val same_witness
+    :  ('t1, 'm1, 'tag1) t
+    -> ('t2, 'm2, 'tag2) t
+    -> ('t1 * 'm1 * 'tag1, 't2 * 'm2 * 'tag2) Type.eq option
+
   val same : _ t -> _ t -> bool
 
   (** [implement trait ~impl:(module Impl)] says to implement [trait] with
