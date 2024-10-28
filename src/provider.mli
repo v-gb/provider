@@ -78,11 +78,6 @@ module Trait : sig
       only for the lifetime of the running program. *)
   val uid : _ t -> Uid.t
 
-  val same_witness
-    :  ('t1, 'm1, 'tag1) t
-    -> ('t2, 'm2, 'tag2) t
-    -> ('t1 * 'm1 * 'tag1, 't2 * 'm2 * 'tag2) Type.eq option
-
   val same : _ t -> _ t -> bool
 
   (** [implement trait ~impl:(module Impl)] says to implement [trait] with
@@ -94,15 +89,26 @@ module Trait : sig
       granularity of each Trait. This means that the {!val:implement} function
       focuses solely on creating the implementation, without considering the
       tags that indicate which Traits are supported by the provider. *)
-  val implement : ('t, 'module_type, _) t -> impl:'module_type -> 't Binding0.t
+  val implement
+    :  ('t, 'module_type, 'tag) t
+    -> impl:'module_type
+    -> same_witness:('t, 'module_type) Binding0.same_witness
+    -> 't Binding0.t
 end
 
 module Binding : sig
   (** A binding associates a Trait with an implementation for it. *)
+  type ('t, 'module_type) same_witness = ('t, 'module_type) Binding0.same_witness =
+    { f :
+        'module_type2 'tag2.
+        ('t, 'module_type2, 'tag2) Trait0.t -> ('module_type, 'module_type2) Type.eq
+    }
+
   type 'a t = 'a Binding0.t = private
     | T :
         { trait : ('t, 'module_type, _) Trait.t
         ; implementation : 'module_type
+        ; same_witness : ('t, 'module_type) same_witness
         }
         -> 't t
 
@@ -257,3 +263,33 @@ module Private : sig
     end
   end
 end
+
+(** {[
+      module Trait : sig
+        type ('t, 'module_type, 'tag) t = ('t, 'module_type, 'tag) Trait0.t = ..
+        val same_witness
+          :  ('t1, 'm1, 'tag1) t
+          -> ('t2, 'm2, 'tag2) t
+          -> ('t1 * 'm1 * 'tag1, 't2 * 'm2 * 'tag2) Type.eq option
+        val implement : ('t, 'module_type, _) t -> impl:'module_type -> 't Binding0.t
+      end
+
+      module Binding : sig
+        type 'a t = 'a Binding0.t = private
+          | T :
+              { trait : ('t, 'module_type, _) Trait.t
+              ; implementation : 'module_type
+              }
+              -> 't t
+      end
+
+      module Handler : sig
+        type ('t, -'tags) t
+        val make : 't Binding.t list -> ('t, _) t
+        val lookup
+          :  ('t, 'tags) t
+          -> trait:('t, 'implementation, 'tags) Trait.t
+          -> 'implementation
+        val implements : ('t, _) t -> trait:('t, _, _) Trait.t -> bool
+      end
+    ]} *)

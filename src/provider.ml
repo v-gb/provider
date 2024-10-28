@@ -47,39 +47,26 @@ module Trait = struct
   let uid (t : _ t) = Obj.Extension_constructor.id (extension_constructor t)
   let compare_by_uid id1 id2 = Uid.compare (uid id1) (uid id2)
   let same id1 id2 = phys_same id1 id2
-
-  let same_witness
-    (type t1 t2 m1 m2 tag1 tag2)
-    (id1 : (t1, m1, tag1) t)
-    (id2 : (t2, m2, tag2) t)
-    : (t1 * m1 * tag1, t2 * m2 * tag2) Type.eq option
-    =
-    (* Technically, nothing prevents people from defining
-       type _ trait += Foo : int -> ... trait
-       where Foo 1 and Foo 2 would equal according to compare_by_uid, but not
-       the same witness here. We would fail so we're safe.
-
-       It might be possible that this is necessary for correctness. Untested,
-       but with something like:
-       type _ trait += Foo : 'a Type_equal.Id.t -> ('a, (module T with t = 'a), [> `whatever ]) trait
-       I wonder if it'd be possible to lookup Foo (T : (string, string) Type_equal.t)
-       and find a Foo (T : (int, int) Type_equal.t). *)
-    if phys_same id1 id2 then Some (Obj.magic Type.Equal) else None
-  ;;
-
   let implement = Binding0.implement
 end
 
 module Binding = struct
+  type ('t, 'module_type) same_witness = ('t, 'module_type) Binding0.same_witness =
+    { f :
+        'module_type2 'tag2.
+        ('t, 'module_type2, 'tag2) Trait0.t -> ('module_type, 'module_type2) Type.eq
+    }
+
   type 'a t = 'a Binding0.t = private
     | T :
         { trait : ('t, 'module_type, _) Trait.t
         ; implementation : 'module_type
+        ; same_witness : ('t, 'module_type) same_witness
         }
         -> 't t
 
-  let uid (T { trait; implementation = _ }) = Trait.uid trait
-  let info (T { trait; implementation = _ }) = Trait.info trait
+  let uid (T { trait; implementation = _; same_witness = _ }) = Trait.uid trait
+  let info (T { trait; implementation = _; same_witness = _ }) = Trait.info trait
   let compare_by_uid t1 t2 = Trait.Uid.compare (uid t1) (uid t2)
 end
 
@@ -149,13 +136,16 @@ module Handler = struct
     then if_not_found ~trait_info:(Trait.info trait)
     else (
       let mid = (from + to_) / 2 in
-      let (Binding.T { trait = elt; implementation } as binding) = t.(mid) in
+      let (Binding.T { trait = elt; implementation; same_witness } as binding) =
+        t.(mid)
+      in
       match Trait.compare_by_uid elt trait |> Ordering.of_int with
       | Equal ->
         if update_cache then t.(0) <- binding;
-        (match Trait.same_witness elt trait with
-         | Some Equal -> if_found implementation
-         | None -> failwith "Provider.lookup: collision between extension constructors")
+        if not (phys_same elt trait)
+        then failwith "Provider.lookup: collision between extension constructors";
+        (match same_witness.f trait with
+         | Equal -> if_found implementation)
       | Less ->
         binary_search t ~trait ~update_cache ~if_not_found ~if_found ~from:(mid + 1) ~to_
       | Greater ->
@@ -175,10 +165,12 @@ module Handler = struct
     if Array.length t = 0
     then if_not_found ~trait_info:(Trait.info trait)
     else (
-      let (Binding.T { trait = cached_id; implementation }) = t.(0) in
-      match Trait.same_witness trait cached_id with
-      | Some Equal -> if_found implementation
-      | None ->
+      let (Binding.T { trait = cached_id; implementation; same_witness }) = t.(0) in
+      if phys_same cached_id trait
+      then (
+        match same_witness.f trait with
+        | Equal -> if_found implementation)
+      else
         binary_search
           t
           ~trait

@@ -12,7 +12,20 @@ module Provider_interface = struct
     | Directory_reader : ('t, (module S with type t = 't), [> tag ]) Provider.Trait.t
 
   let make (type t) (module M : S with type t = t) =
-    Provider.Handler.make [ Provider.Trait.implement Directory_reader ~impl:(module M) ]
+    Provider.Handler.make
+      [ Provider.Trait.implement
+          Directory_reader
+          ~impl:(module M)
+          ~same_witness:
+            { f =
+                (fun (type mt2 tag2)
+                  (trait2 : (t, mt2, tag2) Provider.Trait.t)
+                  : ((module S with type t = t), mt2) Type.eq ->
+                  match trait2 with
+                  | Directory_reader -> Type.Equal
+                  | _ -> assert false)
+            }
+      ]
   ;;
 end
 
