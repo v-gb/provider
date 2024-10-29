@@ -14,7 +14,7 @@ let make () : [ `Directory_reader ] Provider.t =
     ; handler =
         Provider.Handler.make
           [ Provider.Trait.implement
-              Interface.Directory_reader.Provider_interface.Directory_reader
+              Interface.Directory_reader.Provider_interface.directory_reader
               ~impl:(module Impl)
           ]
     }

@@ -15,7 +15,7 @@ module Int_hum_printer = struct
             Providers.Num_printer.handler
             ~with_:
               [ Provider.Trait.implement
-                  Interface.Int_printer.Provider_interface.Int_printer
+                  Interface.Int_printer.Provider_interface.int_printer
                   ~impl:(module Impl)
               ]
       }

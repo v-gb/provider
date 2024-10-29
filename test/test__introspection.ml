@@ -17,9 +17,9 @@ let print_implements (Provider.T { t = _; handler }) =
     [%sexp
       { implements =
           { file_reader =
-              (implements Interface.File_reader.Provider_interface.File_reader : bool)
+              (implements Interface.File_reader.Provider_interface.file_reader : bool)
           ; directory_reader =
-              (implements Interface.Directory_reader.Provider_interface.Directory_reader
+              (implements Interface.Directory_reader.Provider_interface.directory_reader
                : bool)
           }
       }]

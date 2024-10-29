@@ -7,7 +7,7 @@
 let%expect_test "make interface" =
   let trait1 =
     Provider.Trait.implement
-      Interface.Directory_reader.Provider_interface.Directory_reader
+      Interface.Directory_reader.Provider_interface.directory_reader
       ~impl:(module Providers.Eio_reader.Impl)
   in
   let eio1 =
@@ -20,7 +20,7 @@ let%expect_test "make interface" =
      ());
   let trait2 =
     Provider.Trait.implement
-      Interface.File_reader.Provider_interface.File_reader
+      Interface.File_reader.Provider_interface.file_reader
       ~impl:(module Providers.Eio_reader.Impl)
   in
   (match trait1, trait2 with

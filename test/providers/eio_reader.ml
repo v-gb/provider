@@ -17,10 +17,10 @@ let make ~env : [ `Directory_reader | `File_reader ] Provider.t =
     ; handler =
         Provider.Handler.make
           [ Provider.Trait.implement
-              Interface.Directory_reader.Provider_interface.Directory_reader
+              Interface.Directory_reader.Provider_interface.directory_reader
               ~impl:(module Impl)
           ; Provider.Trait.implement
-              Interface.File_reader.Provider_interface.File_reader
+              Interface.File_reader.Provider_interface.file_reader
               ~impl:(module Impl)
           ]
     }
