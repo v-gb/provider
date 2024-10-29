@@ -1,1 +1,17 @@
-type ('t, 'module_type, 'tag) t = ..
+type ('t1, 't2) is_a_function_of
+
+val create : unit -> _ is_a_function_of
+
+module Make (X : sig
+    type !'a t
+    type 'a module_type
+  end) : sig
+  val is_a_function_of : ('a X.t, 'a X.module_type) is_a_function_of
+end
+
+type ('t, 'module_type, 'tag) c = ..
+
+type ('t, 'module_type, 'tag) t =
+  { c : ('t, 'module_type, 'tag) c
+  ; is_a_function_of : ('t, 'module_type) is_a_function_of
+  }

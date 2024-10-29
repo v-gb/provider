@@ -28,7 +28,23 @@ module Trait : sig
 
       ['module_type] is expected to be a module type (Eio supports single
       functions but this is discouraged through the use of this library). *)
-  type ('t, 'module_type, 'tag) t = ('t, 'module_type, 'tag) Trait0.t = ..
+  type ('t1, 't2) is_a_function_of = ('t1, 't2) Trait0.is_a_function_of
+
+  val create : unit -> _ is_a_function_of
+
+  module Make (X : sig
+      type !'a t
+      type 'a module_type
+    end) : sig
+    val is_a_function_of : ('a X.t, 'a X.module_type) is_a_function_of
+  end
+
+  type ('t, 'module_type, 'tag) c = ('t, 'module_type, 'tag) Trait0.c = ..
+
+  type ('t, 'module_type, 'tag) t = ('t, 'module_type, 'tag) Trait0.t =
+    { c : ('t, 'module_type, 'tag) c
+    ; is_a_function_of : ('t, 'module_type) is_a_function_of
+    }
 
   (** {1 Dump & debug} *)
 
@@ -77,11 +93,6 @@ module Trait : sig
       to the constructors of the variant type {!type:Trait.t}, making them valid
       only for the lifetime of the running program. *)
   val uid : _ t -> Uid.t
-
-  val same_witness
-    :  ('t1, 'm1, 'tag1) t
-    -> ('t2, 'm2, 'tag2) t
-    -> ('t1 * 'm1 * 'tag1, 't2 * 'm2 * 'tag2) Type.eq option
 
   val same : _ t -> _ t -> bool
 

@@ -12,10 +12,21 @@ let raise_s msg sexp = raise (E (Sexp.List [ Atom msg; sexp ]))
 let phys_same t1 t2 = phys_equal (Obj.repr t1) (Obj.repr t2)
 
 module Trait = struct
-  type ('t, 'module_type, 'tag) t = ('t, 'module_type, 'tag) Trait0.t = ..
+  type ('t1, 't2) is_a_function_of = ('t1, 't2) Trait0.is_a_function_of
 
-  let extension_constructor =
-    (Obj.Extension_constructor.of_val : _ t -> Obj.Extension_constructor.t)
+  let create = Trait0.create
+
+  module Make = Trait0.Make
+
+  type ('t, 'module_type, 'tag) c = ('t, 'module_type, 'tag) Trait0.c = ..
+
+  type ('t, 'module_type, 'tag) t = ('t, 'module_type, 'tag) Trait0.t =
+    { c : ('t, 'module_type, 'tag) c
+    ; is_a_function_of : ('t, 'module_type) is_a_function_of
+    }
+
+  let extension_constructor t : Obj.Extension_constructor.t =
+    Obj.Extension_constructor.of_val (t.c : _ c)
   ;;
 
   module Info = struct
@@ -48,23 +59,15 @@ module Trait = struct
   let compare_by_uid id1 id2 = Uid.compare (uid id1) (uid id2)
   let same id1 id2 = phys_same id1 id2
 
-  let same_witness
-    (type t1 t2 m1 m2 tag1 tag2)
-    (id1 : (t1, m1, tag1) t)
-    (id2 : (t2, m2, tag2) t)
-    : (t1 * m1 * tag1, t2 * m2 * tag2) Type.eq option
+  let same_witness (type tt m1 m2) (id1 : (tt, m1, _) t) (id2 : (tt, m2, _) t)
+    : (m1, m2) Type.eq option
     =
-    (* Technically, nothing prevents people from defining
-       type _ trait += Foo : int -> ... trait
-       where Foo 1 and Foo 2 would equal according to compare_by_uid, but not
-       the same witness here. We would fail so we're safe.
-
-       It might be possible that this is necessary for correctness. Untested,
-       but with something like:
-       type _ trait += Foo : 'a Type_equal.Id.t -> ('a, (module T with t = 'a), [> `whatever ]) trait
-       I wonder if it'd be possible to lookup Foo (T : (string, string) Type_equal.t)
-       and find a Foo (T : (int, int) Type_equal.t). *)
-    if phys_same id1 id2 then Some (Obj.magic Type.Equal) else None
+    if phys_same id1.c id2.c
+    then (
+      let _ : (tt, m1) is_a_function_of = id1.is_a_function_of in
+      let _ : (tt, m2) is_a_function_of = id2.is_a_function_of in
+      Some (Obj.magic Type.Equal))
+    else None
   ;;
 
   let implement = Binding0.implement
