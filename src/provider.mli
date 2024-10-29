@@ -28,23 +28,16 @@ module Trait : sig
 
       ['module_type] is expected to be a module type (Eio supports single
       functions but this is discouraged through the use of this library). *)
-  type ('t1, 't2) is_a_function_of = ('t1, 't2) Trait0.is_a_function_of
+  type ('t, 'module_type, +'tag) t = ('t, 'module_type, 'tag) Trait0.t
 
-  val create : unit -> _ is_a_function_of
+  val create : unit -> _ t
 
-  module Make (X : sig
+  module Create (X : sig
       type !'a t
       type 'a module_type
     end) : sig
-    val is_a_function_of : ('a X.t, 'a X.module_type) is_a_function_of
+    val t : ('a X.t, 'a X.module_type, _) t
   end
-
-  type ('t, 'module_type, 'tag) c = ('t, 'module_type, 'tag) Trait0.c = ..
-
-  type ('t, 'module_type, 'tag) t = ('t, 'module_type, 'tag) Trait0.t =
-    { c : ('t, 'module_type, 'tag) c
-    ; is_a_function_of : ('t, 'module_type) is_a_function_of
-    }
 
   (** {1 Dump & debug} *)
 

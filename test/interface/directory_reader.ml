@@ -8,17 +8,12 @@ module Provider_interface = struct
     val readdir : t -> path:string -> string list
   end
 
-  type (_, _, _) Provider.Trait.c +=
-    | Directory_reader : ('t, (module S with type t = 't), [> tag ]) Provider.Trait.c
-
-  module P = Provider.Trait.Make (struct
+  module Directory_reader = Provider.Trait.Create (struct
       type 't t = 't
       type 't module_type = (module S with type t = 't)
     end)
 
-  let directory_reader : _ Provider.Trait.t =
-    { c = Directory_reader; is_a_function_of = P.is_a_function_of }
-  ;;
+  let directory_reader : (_, _, [> tag ]) Provider.Trait.t = Directory_reader.t
 
   let make (type t) (module M : S with type t = t) =
     Provider.Handler.make [ Provider.Trait.implement directory_reader ~impl:(module M) ]

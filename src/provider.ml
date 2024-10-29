@@ -12,21 +12,14 @@ let raise_s msg sexp = raise (E (Sexp.List [ Atom msg; sexp ]))
 let phys_same t1 t2 = phys_equal (Obj.repr t1) (Obj.repr t2)
 
 module Trait = struct
-  type ('t1, 't2) is_a_function_of = ('t1, 't2) Trait0.is_a_function_of
+  type ('t, 'module_type, +'tag) t = ('t, 'module_type, 'tag) Trait0.t
 
   let create = Trait0.create
 
-  module Make = Trait0.Make
+  module Create = Trait0.Create
 
-  type ('t, 'module_type, 'tag) c = ('t, 'module_type, 'tag) Trait0.c = ..
-
-  type ('t, 'module_type, 'tag) t = ('t, 'module_type, 'tag) Trait0.t =
-    { c : ('t, 'module_type, 'tag) c
-    ; is_a_function_of : ('t, 'module_type) is_a_function_of
-    }
-
-  let extension_constructor t : Obj.Extension_constructor.t =
-    Obj.Extension_constructor.of_val (t.c : _ c)
+  let extension_constructor : _ t -> Obj.Extension_constructor.t =
+    Obj.Extension_constructor.of_val
   ;;
 
   module Info = struct
@@ -58,18 +51,7 @@ module Trait = struct
   let uid (t : _ t) = Obj.Extension_constructor.id (extension_constructor t)
   let compare_by_uid id1 id2 = Uid.compare (uid id1) (uid id2)
   let same id1 id2 = phys_same id1 id2
-
-  let same_witness (type tt m1 m2) (id1 : (tt, m1, _) t) (id2 : (tt, m2, _) t)
-    : (m1, m2) Type.eq option
-    =
-    if phys_same id1.c id2.c
-    then (
-      let _ : (tt, m1) is_a_function_of = id1.is_a_function_of in
-      let _ : (tt, m2) is_a_function_of = id2.is_a_function_of in
-      Some (Obj.magic Type.Equal))
-    else None
-  ;;
-
+  let same_witness = Trait0.same_witness
   let implement = Binding0.implement
 end
 

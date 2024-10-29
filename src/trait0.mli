@@ -1,17 +1,12 @@
-type ('t1, 't2) is_a_function_of
+type ('t, 'module_type, +'tag) t
 
-val create : unit -> _ is_a_function_of
+val create : unit -> _ t
 
-module Make (X : sig
+module Create (X : sig
     type !'a t
     type 'a module_type
   end) : sig
-  val is_a_function_of : ('a X.t, 'a X.module_type) is_a_function_of
+  val t : ('a X.t, 'a X.module_type, _) t
 end
 
-type ('t, 'module_type, 'tag) c = ..
-
-type ('t, 'module_type, 'tag) t =
-  { c : ('t, 'module_type, 'tag) c
-  ; is_a_function_of : ('t, 'module_type) is_a_function_of
-  }
+val same_witness : ('t, 'mt1, _) t -> ('t, 'mt2, _) t -> ('mt1, 'mt2) Type.eq option
